@@ -15,6 +15,7 @@ public:
     void deleteProgram();
     int getProgramId();
     void setMat4(std::string name, const glm::mat4& matrix);
+    void use();
 private:
     int program;
 };

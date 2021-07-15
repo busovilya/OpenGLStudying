@@ -14,15 +14,48 @@
 #include "shaderProgram.h"
 #include "texture.h"
 
-std::array<float, 20> vertices{
-    0.5f,  0.5f, 0.0f, 1.0f, 1.0f, // top right
-    0.5f, -0.5f, 0.0f, 1.0f, 0.0f, // bottom right
-    -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, // bottom left
-    -0.5f,  0.5f, 0.0f, 0.0f, 1.0f // top left 
-};
+std::array<float, 180> vertices{
+    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
 
-std::array<uint32_t, 6> indices{
-    0, 1, 3, 1, 2, 3
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 };
 
 constexpr int WIDTH = 800;
@@ -57,6 +90,8 @@ int main()
         return -1;
     }    
 
+    glEnable(GL_DEPTH_TEST);
+
     auto vertShader = Shader(GL_VERTEX_SHADER);
     vertShader.compileShader("shaders/shader.vert");
 
@@ -72,7 +107,7 @@ int main()
 
     Texture texture("textures/container.jpg");
 
-    unsigned int VBO, VAO, EBO;
+    unsigned int VBO, VAO;
 
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
@@ -80,11 +115,7 @@ int main()
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices.data(), GL_STATIC_DRAW);
-
-    glGenBuffers(1, &EBO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices.data(), GL_STATIC_DRAW);
-    
+ 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
@@ -95,8 +126,8 @@ int main()
     MVP mvp { glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f) };
 
     mvp.projection = glm::perspective(glm::radians(45.0f), static_cast<float>(WIDTH) / static_cast<float>(HEIGHT), 0.1f, 100.0f);
-    mvp.view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -2.0f));
-    mvp.model = glm::rotate(glm::mat4(1.0f), glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    mvp.view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
+    mvp.model = glm::rotate(mvp.model, glm::radians(50.0f), glm::vec3(0, 1, 1));
 
     auto startTime = std::chrono::high_resolution_clock::now();
 
@@ -106,18 +137,18 @@ int main()
         startTime = std::chrono::high_resolution_clock::now();
 
         glClearColor(0.1, 0.1, 0.1, 1);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        mvp.model = glm::rotate(mvp.model, glm::radians(0.05f * frameRenderingDuration.count()), glm::vec3(0.0f, 0.0f, 0.1f));
+        mvp.model = glm::rotate(mvp.model, glm::radians(0.05f * frameRenderingDuration.count()), glm::vec3(0.0f, 1.0f, 1.0f));
  
         program.setMat4("model", mvp.model);
         program.setMat4("projection", mvp.projection);
         program.setMat4("view", mvp.view);
 
         glBindTexture(GL_TEXTURE_2D, texture.getId());
-        glUseProgram(program.getProgramId());
+        program.use();
         glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -125,7 +156,6 @@ int main()
 
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
 
     program.deleteProgram();
     glfwTerminate();
