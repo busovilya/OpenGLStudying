@@ -14,6 +14,8 @@
 #include "shaderProgram.h"
 #include "texture.h"
 
+void processUserInput(GLFWwindow* window);
+
 std::array<float, 180> vertices{
     -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
      0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
@@ -61,6 +63,14 @@ std::array<float, 180> vertices{
 constexpr int WIDTH = 800;
 constexpr int HEIGHT = 600;
 
+glm::vec3 cameraPosition{ 0.0f, 0.0f, 0.0f };
+glm::vec3 cameraFront { 0.0f, 0.0f, 1.0f };
+glm::vec3 cameraRight { 0.0f, 0.0f, 0.0f };
+glm::vec3 cameraUp { 0.0f, 1.0f, 0.0f };
+
+std::chrono::high_resolution_clock::time_point currentTime;
+std::chrono::milliseconds deltaFrameTime;
+
 struct MVP
 {
     glm::mat4 model;
@@ -106,6 +116,8 @@ int main()
     fragShader.deleteShader();
 
     Texture texture("textures/container.jpg");
+    cameraPosition = { 0.0f, 0.0f, -4.0f };
+    cameraRight = glm::normalize(glm::cross(cameraUp, cameraPosition + cameraFront));
 
     unsigned int VBO, VAO;
 
@@ -126,20 +138,21 @@ int main()
     MVP mvp { glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f) };
 
     mvp.projection = glm::perspective(glm::radians(45.0f), static_cast<float>(WIDTH) / static_cast<float>(HEIGHT), 0.1f, 100.0f);
-    mvp.view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
-    mvp.model = glm::rotate(mvp.model, glm::radians(50.0f), glm::vec3(0, 1, 1));
 
-    auto startTime = std::chrono::high_resolution_clock::now();
+    currentTime = std::chrono::high_resolution_clock::now();
 
     while(!glfwWindowShouldClose(window)) 
     {
-        auto frameRenderingDuration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime);
-        startTime = std::chrono::high_resolution_clock::now();
+        deltaFrameTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - currentTime);
+        currentTime = std::chrono::high_resolution_clock::now();
+
+        processUserInput(window);
 
         glClearColor(0.1, 0.1, 0.1, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        mvp.model = glm::rotate(mvp.model, glm::radians(0.05f * frameRenderingDuration.count()), glm::vec3(0.0f, 1.0f, 1.0f));
+        mvp.model = glm::rotate(mvp.model, glm::radians(0.05f * deltaFrameTime.count()), glm::vec3(0.0f, 1.0f, 1.0f));
+        mvp.view = glm::lookAt(cameraPosition, cameraPosition + cameraFront, cameraUp);
  
         program.setMat4("model", mvp.model);
         program.setMat4("projection", mvp.projection);
@@ -161,4 +174,31 @@ int main()
     glfwTerminate();
 
     return 0;
+}
+
+void processUserInput(GLFWwindow* window)
+{
+    float speed = 0.01f * deltaFrameTime.count();
+
+    if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    {
+        cameraPosition += speed * cameraFront;
+    }
+    if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    {
+        cameraPosition -= speed * cameraFront;
+    }
+    if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    {        
+        cameraPosition += speed * cameraRight;
+    }
+    if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    {
+        cameraPosition -= speed * cameraRight;
+    }
+    // TODO : make camera rotation around cameraUp axis by Q and E keys
+    if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    {
+        glfwSetWindowShouldClose(window, 1);
+    }
 }
