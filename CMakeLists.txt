@@ -2,7 +2,7 @@ project(OPENGL_EXPERIMENTS)
 
 cmake_minimum_required(VERSION 3.16)
 
-set(SOURCES src/shader.cpp src/shaderProgram.cpp src/texture.cpp)
+set(SOURCES src/shader.cpp src/shaderProgram.cpp src/texture.cpp src/camera.cpp include/utils.h)
 
 find_package(OpenGL REQUIRED)
 find_package(glfw3 3.3 REQUIRED)

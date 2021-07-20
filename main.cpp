@@ -13,6 +13,8 @@
 #include "shader.h"
 #include "shaderProgram.h"
 #include "texture.h"
+#include "camera.h"
+#include "utils.h"
 
 void processUserInput(GLFWwindow* window);
 
@@ -63,11 +65,6 @@ std::array<float, 180> vertices{
 constexpr int WIDTH = 800;
 constexpr int HEIGHT = 600;
 
-glm::vec3 cameraPosition{ 0.0f, 0.0f, 0.0f };
-glm::vec3 cameraFront { 0.0f, 0.0f, 1.0f };
-glm::vec3 cameraRight { 0.0f, 0.0f, 0.0f };
-glm::vec3 cameraUp { 0.0f, 1.0f, 0.0f };
-
 std::chrono::high_resolution_clock::time_point currentTime;
 std::chrono::milliseconds deltaFrameTime;
 
@@ -78,6 +75,7 @@ struct MVP
     glm::mat4 projection;
 };
 
+Camera camera;
 
 int main() 
 {
@@ -116,8 +114,10 @@ int main()
     fragShader.deleteShader();
 
     Texture texture("textures/container.jpg");
-    cameraPosition = { 0.0f, 0.0f, -4.0f };
-    cameraRight = glm::normalize(glm::cross(cameraUp, cameraPosition + cameraFront));
+    glm::vec3 cameraPosition{ 0.0f, 0.0f, -4.0f };
+    glm::vec3 cameraFront { 0.0f, 0.0f, 1.0f };
+    glm::vec3 cameraUp { 0.0f, 1.0f, 0.0f };
+    camera = Camera(cameraPosition, cameraUp, cameraFront);
 
     unsigned int VBO, VAO;
 
@@ -146,13 +146,15 @@ int main()
         deltaFrameTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - currentTime);
         currentTime = std::chrono::high_resolution_clock::now();
 
+        std::cout << "FPS: " << deltaFrameTime.count() << std::endl;
+
         processUserInput(window);
 
         glClearColor(0.1, 0.1, 0.1, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         mvp.model = glm::rotate(mvp.model, glm::radians(0.05f * deltaFrameTime.count()), glm::vec3(0.0f, 1.0f, 1.0f));
-        mvp.view = glm::lookAt(cameraPosition, cameraPosition + cameraFront, cameraUp);
+        mvp.view = camera.getViewMatrix();
  
         program.setMat4("model", mvp.model);
         program.setMat4("projection", mvp.projection);
@@ -179,26 +181,28 @@ int main()
 void processUserInput(GLFWwindow* window)
 {
     float speed = 0.01f * deltaFrameTime.count();
+    glm::vec3 cameraMovementVector{0.0f};
 
     if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
     {
-        cameraPosition += speed * cameraFront;
+        cameraMovementVector = speed * camera.getForwardVector();
     }
     if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
     {
-        cameraPosition -= speed * cameraFront;
+        cameraMovementVector = -speed * camera.getForwardVector();
     }
     if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
     {        
-        cameraPosition += speed * cameraRight;
+        cameraMovementVector = speed * camera.getRightVector();
     }
     if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
     {
-        cameraPosition -= speed * cameraRight;
+        cameraMovementVector = -speed * camera.getRightVector();
     }
-    // TODO : make camera rotation around cameraUp axis by Q and E keys
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
         glfwSetWindowShouldClose(window, 1);
     }
+
+    camera.move(cameraMovementVector);
 }
